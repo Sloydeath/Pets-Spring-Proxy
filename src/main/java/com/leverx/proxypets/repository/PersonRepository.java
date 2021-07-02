@@ -12,6 +12,6 @@ public interface PersonRepository {
     List<Person> findAll();
     Optional<Person> findById(Long id);
     Person update(PersonDto personDto, Long id);
-    Void deleteById(Long id);
+    void deleteById(Long id);
 
 }
