@@ -2,8 +2,6 @@ package com.leverx.proxypets.util;
 
 public class PetsApiConstraintUtil {
 
-    public static final String PETS_API_BASE_URL = "https://pets-spring-leverx.cfapps.eu10.hana.ondemand.com";
-
     //people
     public static final String PEOPLE_ENDPOINT = "%s/people";
     public static final String PEOPLE_ID_ENDPOINT = "%s/people/%d";
