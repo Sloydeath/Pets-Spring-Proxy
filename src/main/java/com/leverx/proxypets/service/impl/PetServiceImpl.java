@@ -1,5 +1,6 @@
 package com.leverx.proxypets.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.leverx.proxypets.dto.pet.SwappingPetsDto;
 import com.leverx.proxypets.dto.pet.UpdatePetDto;
 import com.leverx.proxypets.exception.custom.PetNotFoundException;
@@ -32,7 +33,7 @@ public class PetServiceImpl implements PetService {
     }
 
     @Override
-    public Pet create(Pet pet) {
+    public Pet create(Pet pet) throws JsonProcessingException {
         petRepository.save(pet);
         return pet;
     }
