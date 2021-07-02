@@ -1,5 +1,6 @@
 package com.leverx.proxypets.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.leverx.proxypets.dto.pet.PetDto;
 import com.leverx.proxypets.dto.pet.ResponsePetDto;
 import com.leverx.proxypets.dto.pet.SwappingPetsDto;
@@ -61,7 +62,7 @@ public class PetController {
     }
 
     @PostMapping(produces = APPLICATION_JSON_VALUE)
-    public ResponseEntity<ResponsePetDto> savePet(@Valid @RequestBody PetDto receivedPetDto) {
+    public ResponseEntity<ResponsePetDto> savePet(@Valid @RequestBody PetDto receivedPetDto) throws JsonProcessingException {
 
         Pet pet = petService.create(petMapper.convertToEntity(receivedPetDto));
         ResponsePetDto responsePetDto = petMapper.convertToResponsePetDto(pet);

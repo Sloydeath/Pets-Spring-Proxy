@@ -1,98 +1,159 @@
 package com.leverx.proxypets.repository.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.leverx.proxypets.dto.person.PersonDto;
 import com.leverx.proxypets.exception.custom.EntityNotFoundException;
 import com.leverx.proxypets.mapper.PersonMapper;
 import com.leverx.proxypets.model.Person;
 import com.leverx.proxypets.repository.PersonRepository;
+import com.sap.cloud.sdk.cloudplatform.connectivity.DestinationAccessor;
+import com.sap.cloud.sdk.cloudplatform.connectivity.HttpDestination;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.entity.StringEntity;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Repository;
-import org.springframework.web.reactive.function.client.WebClient;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import static com.leverx.proxypets.util.ExceptionMessageUtil.PERSON_ERROR_PATTERN;
+import static com.leverx.proxypets.util.HttpJsonUtil.jsonWrapper;
 import static com.leverx.proxypets.util.PetsApiConstraintUtil.PEOPLE_ENDPOINT;
 import static com.leverx.proxypets.util.PetsApiConstraintUtil.PEOPLE_ID_ENDPOINT;
+import static com.sap.cloud.sdk.cloudplatform.connectivity.HttpClientAccessor.getHttpClient;
 import static java.lang.String.format;
-import static reactor.core.publisher.Mono.error;
-import static reactor.core.publisher.Mono.just;
+import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 @Repository
 @Slf4j
 public class PersonRepositoryImpl implements PersonRepository {
 
-    private final WebClient webClient;
     private final PersonMapper personMapper;
+    private final ObjectMapper objectMapper;
+    private final ResponseHandler<String> responseHandler;
 
     @Autowired
-    public PersonRepositoryImpl(WebClient webClient, PersonMapper personMapper) {
-        this.webClient = webClient;
+    public PersonRepositoryImpl(PersonMapper personMapper, ObjectMapper objectMapper, ResponseHandler<String> responseHandler) {
         this.personMapper = personMapper;
+        this.objectMapper = objectMapper;
+        this.responseHandler = responseHandler;
     }
 
     @Override
     public Person save(Person person) {
-        PersonDto personDto = personMapper.convertToPersonDto(person);
 
-        return webClient.post()
-                .uri(PEOPLE_ENDPOINT)
-                .body(just(personDto), PersonDto.class)
-                .retrieve()
-                .bodyToMono(Person.class)
-                .block();
+        HttpDestination httpDestination = DestinationAccessor.getDestination("BaseAPI").asHttp();
+        HttpClient httpClient = getHttpClient(httpDestination);
+
+        try {
+            PersonDto personDto = personMapper.convertToPersonDto(person);
+            String requestBodyJson = jsonWrapper(personDto);
+            String requestUrl = format(PEOPLE_ENDPOINT, httpDestination.getUri());
+
+            HttpPost httpPost = new HttpPost(requestUrl);
+            httpPost.setHeader("Accept", "application/json");
+            httpPost.setHeader("Content-type", "application/json");
+
+            StringEntity requestEntity = new StringEntity(requestBodyJson, APPLICATION_JSON);
+            httpPost.setEntity(requestEntity);
+
+            String response = httpClient.execute(httpPost, responseHandler);
+            return objectMapper.readValue(response, Person.class);
+
+        } catch (IOException e) {
+            log.error("Connection was aborted", e);
+            throw new EntityNotFoundException("Person wasn't saved");
+        }
     }
 
     @Override
     public List<Person> findAll() {
-        return webClient.get()
-                .uri(PEOPLE_ENDPOINT)
-                .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<List<Person>>() {})
-                .block();
+
+        HttpDestination httpDestination = DestinationAccessor.getDestination("BaseAPI").asHttp();
+        HttpClient httpClient = getHttpClient(httpDestination);
+        List<Person> people = new ArrayList<>();
+
+        try {
+            String requestUrl = format(PEOPLE_ENDPOINT, httpDestination.getUri());
+            String response = httpClient.execute(new HttpGet(requestUrl), responseHandler);
+            people = objectMapper.readValue(response, new TypeReference<List<Person>>() {});
+
+        } catch (IOException e) {
+            log.error("Connection was aborted", e);
+        }
+        return people;
     }
 
     @Override
     public Optional<Person> findById(Long id) {
-        return webClient.get()
-                .uri(PEOPLE_ID_ENDPOINT, id)
-                .retrieve()
-                .bodyToMono(Person.class)
-                .doOnError(error -> {
-                    log.error("An error has occurred in cloud repository: {}", error.getMessage());
-                    throw new EntityNotFoundException(format(PERSON_ERROR_PATTERN, id));
-                })
-                .blockOptional();
+
+        HttpDestination httpDestination = DestinationAccessor.getDestination("BaseAPI").asHttp();
+        HttpClient httpClient = getHttpClient(httpDestination);
+        Person person = null;
+
+        try {
+            String requestUrl = format(PEOPLE_ID_ENDPOINT, httpDestination.getUri(), id);
+            String response = httpClient.execute(new HttpGet(requestUrl), responseHandler);
+            person = objectMapper.readValue(response, Person.class);
+
+        } catch (IOException e) {
+            log.error("Connection was aborted", e);
+        }
+        return Optional.ofNullable(person);
     }
 
     @Override
     public Person update(PersonDto personDto, Long id) throws EntityNotFoundException{
-        return webClient.put()
-                .uri(PEOPLE_ID_ENDPOINT, id)
-                .body(just(personDto), PersonDto.class)
-                .retrieve()
-                .bodyToMono(Person.class)
-                .doOnError(error -> {
-                    log.error("An error has occurred in cloud repository: {}", error.getMessage());
-                    throw new EntityNotFoundException(format(PERSON_ERROR_PATTERN, id));
-                })
-                .block();
+
+        HttpDestination httpDestination = DestinationAccessor.getDestination("BaseAPI").asHttp();
+        HttpClient httpClient = getHttpClient(httpDestination);
+
+        try {
+            String requestBodyJson = jsonWrapper(personDto);
+            String requestUrl = format(PEOPLE_ID_ENDPOINT, httpDestination.getUri(), id);
+
+            HttpPut httpPut = new HttpPut(requestUrl);
+            httpPut.setHeader("Accept", "application/json");
+            httpPut.setHeader("Content-type", "application/json");
+
+            StringEntity requestEntity = new StringEntity(requestBodyJson, APPLICATION_JSON);
+            httpPut.setEntity(requestEntity);
+
+            String response = httpClient.execute(httpPut, responseHandler);
+            return objectMapper.readValue(response, Person.class);
+
+        } catch (IOException e) {
+            log.error("An error has occurred in cloud repository: {}", e.getMessage());
+            throw new EntityNotFoundException(format(PERSON_ERROR_PATTERN, id));
+        }
     }
 
     @Override
-    public Void deleteById(Long id) {
-        return webClient.delete()
-                .uri(PEOPLE_ID_ENDPOINT, id)
-                .retrieve()
-                .bodyToMono(Void.class)
-                .doOnError(error -> {
-                    log.error("An error has occurred in cloud repository: {}", error.getMessage());
-                    error(new EntityNotFoundException(format(PERSON_ERROR_PATTERN, id)));
-                })
-                .block();
+    public void deleteById(Long id) {
+
+        HttpDestination httpDestination = DestinationAccessor.getDestination("BaseAPI").asHttp();
+        HttpClient httpClient = getHttpClient(httpDestination);
+
+        try {
+            String requestUrl = format(PEOPLE_ID_ENDPOINT, httpDestination.getUri(), id);
+
+            HttpDelete httpDelete = new HttpDelete(requestUrl);
+
+            httpClient.execute(httpDelete, responseHandler);
+
+        } catch (IOException e) {
+            log.error("An error has occurred in cloud repository: {}", e.getMessage());
+            throw new EntityNotFoundException(format(PERSON_ERROR_PATTERN, id));
+        }
     }
 
 }
