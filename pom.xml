@@ -29,6 +29,13 @@
         <commons.lang3.version>3.5</commons.lang3.version>
         <lombok.version>1.18.12</lombok.version>
         <model.mapper.version>2.4.3</model.mapper.version>
+        <jackson.version>2.12.3</jackson.version>
+
+        <!--SAP CLOUD-->
+        <sap.cloud.version>3.46.0</sap.cloud.version>
+        <sap.cds.feature.version>1.16.2</sap.cds.feature.version>
+        <sap.cds.integration.version>1.16.2</sap.cds.integration.version>
+
     </properties>
 
     <dependencies>
@@ -94,25 +101,31 @@
             <artifactId>modelmapper</artifactId>
             <version>${model.mapper.version}</version>
         </dependency>
-
         <dependency>
-            <groupId>com.sap.cloud.security.xsuaa</groupId>
-            <artifactId>token-client</artifactId>
-            <version>2.7.7</version>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>${jackson.version}</version>
         </dependency>
-    </dependencies>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>com.sap.cloud.sdk</groupId>
-                <artifactId>sdk-bom</artifactId>
-                <version>3.45.0</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
+        <!-- SAP cloud -->
+        <dependency>
+            <groupId>com.sap.cloud.sdk.cloudplatform</groupId>
+            <artifactId>scp-cf</artifactId>
+            <version>${sap.cloud.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.sap.cds</groupId>
+            <artifactId>cds-feature-cloudfoundry</artifactId>
+            <version>${sap.cds.feature.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.sap.cds</groupId>
+            <artifactId>cds-integration-cloud-sdk</artifactId>
+            <version>${sap.cds.integration.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+    </dependencies>
 
     <!--PROFILES-->
     <profiles>
@@ -128,11 +141,11 @@
             </properties>
         </profile>
 
-        <!--test-->
+        <!--cloud-->
         <profile>
-            <id>test</id>
+            <id>cloud</id>
             <properties>
-                <spring.active.profile>test</spring.active.profile>
+                <spring.active.profile>cloud</spring.active.profile>
             </properties>
         </profile>
     </profiles>
