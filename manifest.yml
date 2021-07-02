@@ -1,0 +1,12 @@
+---
+applications:
+  - name: PROXY-PETS
+    instances: 1
+    path: target/Pets-Spring-Proxy-0.0.1-SNAPSHOT.jar
+    buildpack: https://github.com/cloudfoundry/java-buildpack.git#v4.36
+    env:
+      SPRING_PROFILES_ACTIVE: cloud
+      SET_LOGGING_LEVEL: '{ROOT: INFO, com.sap.cloud.sdk: INFO}'
+    services:
+      - logger
+      - destination
