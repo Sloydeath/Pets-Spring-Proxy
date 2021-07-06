@@ -13,7 +13,7 @@ public class DestinationConfig {
 
     @Bean
     public HttpDestination httpDestination() {
-        return getDestination("BaseAPI").asHttp();
+        return getDestination("BaseAPI_noAuth").asHttp();
     }
 
     @Bean
