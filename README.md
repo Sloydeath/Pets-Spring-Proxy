@@ -8,29 +8,54 @@
 
 ## Deployment
 
-### Local deployment
+### Cloud Foundry deployment
 1. Clone git repository:
     ```
-    https://github.com/Sloydeath/Pets-Spring.git
+    https://github.com/Sloydeath/Pets-Spring-Proxy.git
     ```
-2. Install PostgreSQL and create database pets_db.
-3. Connect to database from Intellij.
-4. Change spring.datasource.username and spring.datasource.password in file:
+
+2. Build project with command:
     ```
-    src/main/resources/application-dev.properties
+    mvn clean install
     ```
-   P.S.: If you have changed post of db (by default 5432) 
-   or name of database (pets_db), you should update 
-   spring.datasource.url in the same file from point №3:
+
+3. Install cf CLI on your computer.
+4. Sign up on the site and create trial account:
    ```
-   spring.datasource.url=jdbc:postgresql://localhost:5432/pets_db
+   https://account.hanatrial.ondemand.com/
    ```
-5. Build project with command:
+5. To log in to the cf CLI:
+   * Run in cmd:
+     ```
+     cf login -a API-URL -u USERNAME -p PASSWORD -o ORG -s SPACE
+     ```
+     Where:
+   * API-URL is your API endpoint, the URL of the Cloud Controller in your Cloud Foundry instance
+   * USERNAME is your username.
+   * PASSWORD is your password. Cloud Foundry discourages using the -p option, as it may record your password in your shell history.
+   * ORG is the org where you want to deploy your apps.
+   * SPACE is the space in the org where you want to deploy your apps.
+   * More information you can find in CF documentation:
+     ```
+     https://docs.cloudfoundry.org/cf-cli/getting-started.html
+     ```
+
+6. Open cmd in the root folder of project and run:
+   ```
+   cf push
+   ```
+
+7. If you want to debug application, you should run this commands in CMD:
+   ```
+   cf login
+   cf allow-space-ssh dev
+   cf enable-ssh proxy-pets
+   cf restage proxy-pets
+   cf ssh -N -T -L 5041:localhost:8000 proxy-pets
+   ```
+
+8. If you want to test app, you should install postman and import files:
     ```
-    mvn -Pdev clean spring-boot:run
-    ```
-6. If you want to test app, you should install postman and import files:
-    ```
-    postman/Pets Local.postman_collection.json
+    postman/Pets_CF.postman_collection.json
     postman/URLS_FOR_PETS_API.postman_environment.json
     ```
